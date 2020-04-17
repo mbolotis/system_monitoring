@@ -43,27 +43,6 @@ def service_status(my_service_name):
     return r_value
 
 
-def critical_path(*args):
-    temp_value = recalculate_value(args[1])
-    if args[1] == 0:
-        while True:
-            if temp_value < 80:
-                break
-            elif time.time() - args[2] > secs_threshold:
-                return 1  # critical incident
-
-            time.sleep(1)
-            temp_value = recalculate_value(args[0])
-
-        return 0  # clear
-    else:
-        while temp_value > cpu_threshold:
-            time.sleep(1)
-            temp_value = recalculate_value(args[0])
-
-        return 0  # clear
-
-
 def recalculate_value(my_type):
     if my_type == types[0]:
         temp_value = cpu_usage()
@@ -75,24 +54,71 @@ def recalculate_value(my_type):
     return temp_value
 
 
+def critical_path(*args):
+    temp_value = recalculate_value(types[1])
+    if args[1] == 0:  # Incident mode
+        while True:
+            if temp_value < args[3]:
+                break
+            elif time.time() - args[2] > secs_threshold:
+                return 1  # critical incident
+
+            time.sleep(1)
+            temp_value = recalculate_value(args[0])
+
+        return 0  # clear
+    else:
+        while temp_value > args[3]:
+            time.sleep(1)
+            temp_value = recalculate_value(args[0])
+
+        return 0  # clear
+
+
+
+def ram_calculation():
+    consolidation = False
+    ram_value = recalculate_value(types[1])
+    if ram_value > ram_threshold:
+        now_time = time.time()
+        call = critical_path(types[1], 0, now_time, ram_threshold)  # 0 = Incident, 1 = consolidation
+
+        # Consolidation stage
+        if call == 1:
+            consolidation = True
+            print("SEND INCIDENT EMAIL")
+            '''SEND INCIDENT EMAIL'''
+        while call == 1:
+            call = critical_path(types[1], 1, None, ram_threshold)  # recalculates values until becoming clear
+
+        if consolidation:
+            print("SEND CLEAR EMAIL")
+            '''SEND CLEAR EMAIL'''
+        # End of consolidation stage
+
+    print("Ram usage !", ram_value, time.time())
+
+
 if __name__ == '__main__':
-    types = ("cpu", "ram", "disk")
+
     service_name = 'Dnscache'
-    cpu = cpu_usage()
-    ram = ram_usage()
-    disk = disk_space()
     service = service_status(service_name)
-
-    secs_threshold = 20
-
-    cpu_threshold = 80.0
-    ram_threshold = 50.0
-    disk_threshold = 80.0
     service_prop_status = "running"
 
-    t1 = threading.Thread()
+    types = ("cpu", "ram", "disk")
+
+    secs_threshold = 10
+    cpu_threshold = 80.0
+    ram_threshold = 55.0
+    disk_threshold = 80.0
 
     while True:
+        ram_calculation()
+        time.sleep(2)
+'''        cpu = recalculate_value(types[0])
+        #ram = recalculate_value(types[1])
+        disk = recalculate_value(types[2])
+
         if cpu > cpu_threshold:
             now_time = time.time()
             call = critical_path(types[0], 0, now_time)  # 0 = Incident, 1 = consolidation
@@ -113,10 +139,7 @@ if __name__ == '__main__':
             print("Poli disk", time.time())
 
         if service != service_prop_status:
-            print("Service down")
+            print("Service down")'''
 
-        cpu = recalculate_value(types[0])
-        ram = recalculate_value(types[1])
-        disk = recalculate_value(types[2])
 
-        time.sleep(2)
+# sxolia, threading, emails
