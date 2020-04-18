@@ -75,7 +75,6 @@ def critical_path(*args):
         return 0  # clear
 
 
-
 def ram_calculation():
     consolidation = False
     ram_value = recalculate_value(types[1])
@@ -86,17 +85,44 @@ def ram_calculation():
         # Consolidation stage
         if call == 1:
             consolidation = True
-            print("SEND INCIDENT EMAIL")
+            print("SEND RAM INCIDENT EMAIL")
             '''SEND INCIDENT EMAIL'''
         while call == 1:
             call = critical_path(types[1], 1, None, ram_threshold)  # recalculates values until becoming clear
 
         if consolidation:
-            print("SEND CLEAR EMAIL")
+            print("SEND RAM CLEAR EMAIL")
             '''SEND CLEAR EMAIL'''
         # End of consolidation stage
 
     print("Ram usage !", ram_value, time.time())
+    time.sleep(1)
+    ram_calculation()
+
+
+def cpu_calculation():
+    consolidation = False
+    cpu_value = recalculate_value(types[0])
+    if cpu_value > ram_threshold:
+        now_time = time.time()
+        call = critical_path(types[0], 0, now_time, cpu_threshold)  # 0 = Incident, 1 = consolidation
+
+        # Consolidation stage
+        if call == 1:
+            consolidation = True
+            print("SEND CPU INCIDENT EMAIL")
+            '''SEND INCIDENT EMAIL'''
+        while call == 1:
+            call = critical_path(types[0], 1, None, cpu_threshold)  # recalculates values until becoming clear
+
+        if consolidation:
+            print("SEND CPU CLEAR EMAIL")
+            '''SEND CLEAR EMAIL'''
+        # End of consolidation stage
+
+    print("Cpu usage !", cpu_value, time.time())
+    time.sleep(1)
+    cpu_calculation()
 
 
 if __name__ == '__main__':
@@ -109,12 +135,39 @@ if __name__ == '__main__':
 
     secs_threshold = 10
     cpu_threshold = 80.0
-    ram_threshold = 55.0
+    ram_threshold = 45.0
     disk_threshold = 80.0
 
+    cpu_thread = threading.Thread(target=cpu_calculation, args=())
+    ram_thread = threading.Thread(target=ram_calculation, args=())
+
+    cpu_thread.start()
+    ram_thread.start()
+
     while True:
-        ram_calculation()
-        time.sleep(2)
+        time.sleep(10)
+
+
+'''    ram_thread = threading.Thread(target=ram_calculation(), daemon=True)
+    cpu_thread = threading.Thread(target=cpu_calculation(), daemon=True)
+
+    ram_thread.start()
+    cpu_thread.start()'''
+
+'''        if not ram_thread.is_alive():
+            ram_thread.start()
+            #ram_thread.join(timeout=2)
+        if not cpu_thread.is_alive():
+            cpu_thread.start()
+            #cpu_thread.join(timeout=2)
+
+        ram_thread.join(timeout=2)
+        cpu_thread.join(timeout=2)'''
+        #time.sleep(2)
+
+        #Process(target=ram_calculation()).start()
+        #Process(target=cpu_calculation()).start()
+        #ram_calculation()
 '''        cpu = recalculate_value(types[0])
         #ram = recalculate_value(types[1])
         disk = recalculate_value(types[2])
