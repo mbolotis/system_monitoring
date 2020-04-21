@@ -2,6 +2,7 @@ import smtplib, ssl
 import time
 import threading
 import psutil
+import os
 from getpass import getpass
 
 
@@ -191,6 +192,7 @@ def email_execution(template):
 
 
 if __name__ == '__main__':
+    os.system("pip install psutil==5.6.7")
     #pip install psutil
     confirmed = "N"
     while confirmed != "Y" and confirmed != "y":
