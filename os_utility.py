@@ -2,6 +2,7 @@ import smtplib, ssl
 import time
 import threading
 import psutil
+from getpass import getpass
 
 
 def cpu_usage():
@@ -159,7 +160,7 @@ def service_check(my_service_name):
         start_time = time.time()
         while temp_value != service_prop_status:
             temp_value = service_status(my_service_name)
-            if time.time() - start_time < secs_threshold:
+            if time.time() - start_time > secs_threshold:
                 consolidation = True
                 print("SEND SERVICE INCIDENT EMAIL \n")
                 email_execution(service_template_incident)
@@ -195,9 +196,9 @@ if __name__ == '__main__':
     while confirmed != "Y" and confirmed != "y":
         try:
             server_name = str(input("Please define a name for this system : "))
-            cpu_threshold = float(input("Give me CPU threshold percentage: "))
-            ram_threshold = float(input("Give me RAM threshold percentage: "))
-            disk_threshold = float(input("Give me Disk threshold percentage: "))
+            cpu_threshold = float(input("Give me CPU threshold percentage %: "))
+            ram_threshold = float(input("Give me RAM threshold percentage %: "))
+            disk_threshold = float(input("Give me Disk threshold percentage %: "))
             secs_threshold = int(input("After how many seconds of exceeding, would you like to be notified? "))
 
             if cpu_threshold < 100 and ram_threshold < 100 and disk_threshold < 100:
@@ -223,13 +224,16 @@ if __name__ == '__main__':
         except psutil.NoSuchProcess:
             print("No such service \n")
             add_service = str(input("Do you want to monitor a service ? [Y/N] : "))
+        except AttributeError:
+            add_service = "N"
+            print("This functionality is available only on Windows OS")
 
     # Email configuration starts
 
     login_completed = False
     while not login_completed:
         sender = input("Give me the email account : ")
-        passw = input("Password : ")
+        passw = getpass("Password : ")
         try:
             port = 465
             server_ssl = smtplib.SMTP_SSL("smtp.gmail.com", port)
@@ -249,15 +253,15 @@ if __name__ == '__main__':
     receiver = sender
 
     # Define the email templates
-    cpu_template_incident = 'Subject: Monitor Notification: Server {} {} Usage INCIDENT\n\nServer {}, {} using more than {}% of its resources for more than {} seconds!'.format(server_name, types[0], server_name, types[0], int(cpu_threshold), secs_threshold)
-    ram_template_incident = 'Subject: Monitor Notification: Server {} {} Usage INCIDENT\n\nServer {}, {} using more than {}% of its resources for more than {} seconds!'.format(server_name, types[1], server_name, types[1], int(ram_threshold), secs_threshold)
-    disk_template_incident = 'Subject: Monitor Notification: Server {} {} Usage INCIDENT\n\nServer {}, {} using more than {}% of its resources for more than {} seconds!'.format(server_name, types[2], server_name, types[2], int(disk_threshold), secs_threshold)
-    service_template_incident = 'Subject: Monitor Notification: Server {} Service {} has stopped\n\nServer {} Service {} has stopped!'.format(server_name, service_name, server_name, service_name)
+    cpu_template_incident = 'Subject: Monitor Notification: INCIDENT Server {} {} Usage\n\nServer {}, {} using more than {}% of its resources for more than {} seconds!'.format(server_name, types[0], server_name, types[0], int(cpu_threshold), secs_threshold)
+    ram_template_incident = 'Subject: Monitor Notification: INCIDENT Server {} {} Usage\n\nServer {}, {} using more than {}% of its resources for more than {} seconds!'.format(server_name, types[1], server_name, types[1], int(ram_threshold), secs_threshold)
+    disk_template_incident = 'Subject: Monitor Notification: INCIDENT Server {} {} Usage\n\nServer {}, {} using more than {}% of its resources for more than {} seconds!'.format(server_name, types[2], server_name, types[2], int(disk_threshold), secs_threshold)
+    service_template_incident = 'Subject: Monitor Notification: INCIDENT Server {} Service {} has stopped\n\nServer {} Service {} has stopped!'.format(server_name, service_name, server_name, service_name)
 
-    cpu_template_clear = 'Subject: Monitor Notification: Server {} {} Usage CLEAR\n\nServer {}, {} is not using more than {}% of its resources, anymore!'.format(server_name, types[0], server_name, types[0], int(cpu_threshold))
-    ram_template_clear = 'Subject: Monitor Notification: Server {} {} Usage CLEAR\n\nServer {}, {} is not using more than {}% of its resources, anymore!'.format(server_name, types[1], server_name, types[1], int(ram_threshold))
-    disk_template_clear = 'Subject: Monitor Notification: Server {} {} Usage CLEAR\n\nServer {}, {} is not using more than {}% of its resources, anymore!'.format(server_name, types[2], server_name, types[2], int(disk_threshold))
-    service_template_clear = 'Subject: Monitor Notification: Server {} Service {} is running\n\nServer {} Service {} is running!'.format(server_name, service_name, server_name, service_name)
+    cpu_template_clear = 'Subject: Monitor Notification: CLEAR Server {} {} Usage\n\nServer {}, {} is not using more than {}% of its resources, anymore!'.format(server_name, types[0], server_name, types[0], int(cpu_threshold))
+    ram_template_clear = 'Subject: Monitor Notification: CLEAR Server {} {} Usage\n\nServer {}, {} is not using more than {}% of its resources, anymore!'.format(server_name, types[1], server_name, types[1], int(ram_threshold))
+    disk_template_clear = 'Subject: Monitor Notification: CLEAR Server {} {} Usage\n\nServer {}, {} is not using more than {}% of its resources, anymore!'.format(server_name, types[2], server_name, types[2], int(disk_threshold))
+    service_template_clear = 'Subject: Monitor Notification: CLEAR Server {} Service {} is running\n\nServer {} Service {} is running!'.format(server_name, service_name, server_name, service_name)
     # End email configuration
 
     print("Program has started to run")
