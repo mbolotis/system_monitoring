@@ -60,4 +60,4 @@ Obviously, it could be the same as the sender address.
 
 ![](images_for_README/receiver.png)
 
-Congratulations, the configurations has been completed and the program is running!
+Congratulations, the configuration has been completed and the program is running!
