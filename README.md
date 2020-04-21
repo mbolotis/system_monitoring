@@ -55,4 +55,9 @@ Then, you must establish the gmail connection, from which the notification email
 
 ![](images_for_README/guide_4.png)
 
-Congratulations, the program is running!
+Last but not least, you have to define the mail address that will be receiving the notification emails. 
+Obviously, it could be the same as the sender address.
+
+![](images_for_README/receiver.png)
+
+Congratulations, the configurations has been completed and the program is running!
