@@ -31,10 +31,10 @@ def service_status(my_service_name):
     try:
         y = psutil.win_service_get(my_service_name)
         #print("Binary path : ", y.binpath())
-        print("Service Status : {} \n".format(y.status()))
+        #print("Service Status : {} \n".format(y.status()))
         r_value = y.status()
     except psutil.NoSuchProcess:
-        print("No such service \n")
+        #print("No such service \n")
         r_value = "No such service"
 
     return r_value
@@ -82,19 +82,19 @@ def ram_calculation():
         # Consolidation stage
         if call == 1:
             consolidation = True
-            print("SEND RAM INCIDENT EMAIL \n")
+            #print("SEND RAM INCIDENT EMAIL \n")
             email_execution(ram_template_incident)
             '''SEND INCIDENT EMAIL'''
         while call == 1:
             call = critical_path(types[1], 1, None, ram_threshold)  # recalculates values until becoming clear
 
         if consolidation:
-            print("SEND RAM CLEAR EMAIL \n")
+            #print("SEND RAM CLEAR EMAIL \n")
             email_execution(ram_template_clear)
             '''SEND CLEAR EMAIL'''
         # End of consolidation stage
 
-    print("Ram usage !{} {} \n".format(ram_value, time.time()))
+    #print("Ram usage !{} {} \n".format(ram_value, time.time()))
     time.sleep(1)
     ram_calculation()
 
@@ -109,19 +109,19 @@ def cpu_calculation():
         # Consolidation stage
         if call == 1:
             consolidation = True
-            print("SEND CPU INCIDENT EMAIL \n")
+            #print("SEND CPU INCIDENT EMAIL \n")
             email_execution(cpu_template_incident)
             '''SEND INCIDENT EMAIL'''
         while call == 1:
             call = critical_path(types[0], 1, None, cpu_threshold)  # recalculates values until becoming clear
 
         if consolidation:
-            print("SEND CPU CLEAR EMAIL \n")
+            #print("SEND CPU CLEAR EMAIL \n")
             email_execution(cpu_template_clear)
             '''SEND CLEAR EMAIL'''
         # End of consolidation stage
 
-    print("Cpu usage !", cpu_value, time.time())
+    #print("Cpu usage !", cpu_value, time.time())
     time.sleep(1)
     cpu_calculation()
 
@@ -136,19 +136,19 @@ def disk_calculation():
         # Consolidation stage
         if call == 1:
             consolidation = True
-            print("SEND disk INCIDENT EMAIL \n")
+            #print("SEND disk INCIDENT EMAIL \n")
             email_execution(disk_template_incident)
             '''SEND INCIDENT EMAIL'''
         while call == 1:
             call = critical_path(types[2], 1, None, disk_threshold)  # recalculates values until becoming clear
 
         if consolidation:
-            print("SEND disk CLEAR EMAIL \n")
+            #print("SEND disk CLEAR EMAIL \n")
             email_execution(disk_template_clear)
             '''SEND CLEAR EMAIL'''
         # End of consolidation stage
 
-    print("Disk usage !", disk_value, time.time())
+    #print("Disk usage !", disk_value, time.time())
     time.sleep(1)
     disk_calculation()
 
@@ -161,9 +161,9 @@ def service_check(my_service_name):
         start_time = time.time()
         while temp_value != service_prop_status:
             temp_value = service_status(my_service_name)
-            if time.time() - start_time > secs_threshold:
+            if time.time() - start_time < secs_threshold:
                 consolidation = True
-                print("SEND SERVICE INCIDENT EMAIL \n")
+                #print("SEND SERVICE INCIDENT EMAIL \n")
                 email_execution(service_template_incident)
                 break
 
@@ -173,7 +173,7 @@ def service_check(my_service_name):
             time.sleep(1)
             temp_value = service_status(my_service_name)
 
-        print("SEND SERVICE CLEAR EMAIL \n")
+        #print("SEND SERVICE CLEAR EMAIL \n")
         email_execution(service_template_clear)
 
     time.sleep(1)
@@ -184,9 +184,12 @@ def email_execution(template):
     try:
         print("Starting to send email", time.ctime(time.time()))
         server_ssl.login(sender, passw)
-        server_ssl.sendmail(sender, receiver, template)
-        print("Email sent", time.ctime(time.time()))
+        server_ssl.sendmail(sender, receiver_1, template)
+        print("Email sent '{}' {}".format(template, time.ctime(time.time())))
     except smtplib.SMTPDataError:
+        time.sleep(1)
+        email_execution(template)
+    except smtplib.SMTPAuthenticationError:
         time.sleep(1)
         email_execution(template)
 
@@ -234,7 +237,7 @@ if __name__ == '__main__':
 
     login_completed = False
     while not login_completed:
-        sender = input("Give me the email account : ")
+        sender = input("Give me the email account from which the notification emails will be sent : ")
         passw = getpass("Password : ")
         try:
             port = 465
@@ -251,8 +254,13 @@ if __name__ == '__main__':
             """
             print(login_failure_reasons)
 
-    # receiver = str(input("Give me the email address that will be notified : "))
-    receiver = sender
+    receiver_1 = input("Give me the email address that will be notified : ")
+    receiver_2 = input("Confirm the receiver address : ")
+    #receiver = str(input("Give me the email address that will be notified : "))
+    #receiver = sender
+    while receiver_1 != receiver_2:
+        receiver_1 = input("Give me the email address that will be notified : ")
+        receiver_2 = input("Confirm the receiver address : ")
 
     # Define the email templates
     cpu_template_incident = 'Subject: Monitor Notification: INCIDENT Server {} {} Usage\n\nServer {}, {} using more than {}% of its resources for more than {} seconds!'.format(server_name, types[0], server_name, types[0], int(cpu_threshold), secs_threshold)
@@ -280,4 +288,4 @@ if __name__ == '__main__':
     ram_thread.start()
     disk_thread.start()
 
-# background, readme
+# receiver, final_checks, delete_logging, add_comments
