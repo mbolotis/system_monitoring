@@ -206,10 +206,10 @@ if __name__ == '__main__':
             disk_threshold = float(input("Give me Disk threshold percentage %: "))
             secs_threshold = int(input("After how many seconds of exceeding, would you like to be notified? "))
 
-            if cpu_threshold < 100 and ram_threshold < 100 and disk_threshold < 100:
+            if cpu_threshold < 100 and ram_threshold < 100 and disk_threshold < 100 and cpu_threshold >= 1 and ram_threshold >= 1 and disk_threshold >= 1:
                 confirmed = input("Do you want to confirm the above configuration ? [Y/N] : ")
             else:
-                print("Percentages should be less than 100!")
+                print("Percentages should be between 1 and 100!")
                 confirmed = "N"
         except ValueError:
             print("Give me numbers!")
@@ -245,7 +245,7 @@ if __name__ == '__main__':
             server_ssl.login(sender, passw)
             print("you have logged in!")
             login_completed = True
-        except:
+        except smtplib.SMTPAuthenticationError:
             login_failure_reasons = """
             You did not manage to login to this email for 1 (or more) of the following reasons:\n
             - You gave invalid credentials
@@ -288,4 +288,4 @@ if __name__ == '__main__':
     ram_thread.start()
     disk_thread.start()
 
-# receiver, final_checks, delete_logging, add_comments
+# remove_logging, add_comments
