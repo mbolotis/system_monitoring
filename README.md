@@ -1,5 +1,5 @@
 # System Monitoring Tool
-It is a service which monitors the resources of your system (CPU, RAM, Disk, Windows Services) and notifies you when they exceeds the given thresholds.
+It is a lightweight program (requires less than 20mb of your RAM) which monitors the resources of your system (CPU, RAM, Disk, Windows Services) and notifies you when they exceeds the given thresholds.
 
 ## Why should I use this program?
 This program would be very handy, if you maintain 1 or more systems and you need to perform frequent health checks.
