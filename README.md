@@ -11,9 +11,9 @@ Prerequisites:
 -	Python3 installed in the environment that you will download the repository
 -	You have a valid gmail account which is not using two-factor authentication
 
-Steps to be followed:
-Clone the repository.
-Go to the installed folder. 
+Steps to be followed: <br />
+Clone the repository. <br />
+Go to the installed folder. <br />
 Open your command prompt and execute “python os_utility.py” like the following screenshot
 
 ![](images_for_README/guide_0.png)
