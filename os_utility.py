@@ -8,33 +8,31 @@ from getpass import getpass
 
 def cpu_usage():
     x = psutil.cpu_percent(interval=1, percpu=True)
-    #print(type(x))
 
     return x[0]
 
 
 def ram_usage():
     r_usage = psutil.virtual_memory()[2]
-    #print('memory % used:', psutil.virtual_memory()[2])
 
     return r_usage
 
 
 def disk_space():
     d_usage = psutil.disk_usage('/')[3]  # free space
-    #print("Free Disk Space % : ", psutil.disk_usage('/')[3])
 
     return d_usage
 
 
 def service_status(my_service_name):
+    '''
+    :return: The current status for the given service
+    '''
     try:
         y = psutil.win_service_get(my_service_name)
-        #print("Binary path : ", y.binpath())
-        #print("Service Status : {} \n".format(y.status()))
         r_value = y.status()
     except psutil.NoSuchProcess:
-        #print("No such service \n")
+        print("No such service \n")
         r_value = "No such service"
 
     return r_value
@@ -52,6 +50,13 @@ def recalculate_value(my_type):
 
 
 def critical_path(*args):
+    '''
+    In Incident mode, it recalculates component value until
+        either exceeds given secs_threshold and returns 1 (=Incident)
+        or it does not exceed given secs_threshold and returns 0 (=Clear)
+    In Consolidation mode (meaning that is has already sent Incident notification),
+    it recalculates component value until becoming less than given threshold and returns 0 (=Clear)
+    '''
     temp_value = recalculate_value(args[0])
     if args[1] == 0:  # Incident mode
         while True:
@@ -64,7 +69,7 @@ def critical_path(*args):
             temp_value = recalculate_value(args[0])
 
         return 0  # clear
-    else:
+    else:  # Consolidation mode
         while temp_value > args[3]:
             time.sleep(1)
             temp_value = recalculate_value(args[0])
@@ -73,6 +78,12 @@ def critical_path(*args):
 
 
 def ram_calculation():
+    '''
+    This function executes by RAM thread and monitors RAM space every 1 second.
+    When RAM uses more resources than given ram_threshold, it enters in the critical path for incident and if this fact continues for more than
+    the given secs_threshold it sends an Incident email end enters in the critical path for consolidation, and recalculates the value
+    until becoming less than ram_threshold and sends a Clear email.
+    '''
     consolidation = False
     ram_value = recalculate_value(types[1])
     if ram_value > ram_threshold:
@@ -82,24 +93,27 @@ def ram_calculation():
         # Consolidation stage
         if call == 1:
             consolidation = True
-            #print("SEND RAM INCIDENT EMAIL \n")
             email_execution(ram_template_incident)
             '''SEND INCIDENT EMAIL'''
         while call == 1:
             call = critical_path(types[1], 1, None, ram_threshold)  # recalculates values until becoming clear
 
         if consolidation:
-            #print("SEND RAM CLEAR EMAIL \n")
             email_execution(ram_template_clear)
             '''SEND CLEAR EMAIL'''
         # End of consolidation stage
 
-    #print("Ram usage !{} {} \n".format(ram_value, time.time()))
     time.sleep(1)
     ram_calculation()
 
 
 def cpu_calculation():
+    '''
+    This function executes by CPU thread and monitors CPU usage every 1 second.
+    When CPU uses more resources than given cpu__threshold, it enters in the critical path for incident and if this fact continues for more than
+    the given secs_threshold it sends an Incident email end enters in the critical path for consolidation, and recalculates the value
+    until becoming less than cpu__threshold and sends a Clear email.
+    '''
     consolidation = False
     cpu_value = recalculate_value(types[0])
     if cpu_value > ram_threshold:
@@ -109,24 +123,27 @@ def cpu_calculation():
         # Consolidation stage
         if call == 1:
             consolidation = True
-            #print("SEND CPU INCIDENT EMAIL \n")
             email_execution(cpu_template_incident)
             '''SEND INCIDENT EMAIL'''
         while call == 1:
             call = critical_path(types[0], 1, None, cpu_threshold)  # recalculates values until becoming clear
 
         if consolidation:
-            #print("SEND CPU CLEAR EMAIL \n")
             email_execution(cpu_template_clear)
             '''SEND CLEAR EMAIL'''
         # End of consolidation stage
 
-    #print("Cpu usage !", cpu_value, time.time())
     time.sleep(1)
     cpu_calculation()
 
 
 def disk_calculation():
+    '''
+    This function executes by disk thread and monitors disk space every 1 second.
+    When disk uses more resources than given disk_threshold, it enters in the critical path for incident and if this fact continues for more than
+    the given secs_threshold it sends an Incident email end enters in the critical path for consolidation, and recalculates the value
+    until becoming less than disk_threshold and sends a Clear email.
+    '''
     consolidation = False
     disk_value = recalculate_value(types[2])
     if disk_value > disk_threshold:
@@ -136,24 +153,28 @@ def disk_calculation():
         # Consolidation stage
         if call == 1:
             consolidation = True
-            #print("SEND disk INCIDENT EMAIL \n")
             email_execution(disk_template_incident)
             '''SEND INCIDENT EMAIL'''
         while call == 1:
             call = critical_path(types[2], 1, None, disk_threshold)  # recalculates values until becoming clear
 
         if consolidation:
-            #print("SEND disk CLEAR EMAIL \n")
             email_execution(disk_template_clear)
             '''SEND CLEAR EMAIL'''
         # End of consolidation stage
 
-    #print("Disk usage !", disk_value, time.time())
     time.sleep(1)
     disk_calculation()
 
 
 def service_check(my_service_name):
+    '''
+    Checking the status for a given Windows Service
+        if the value is not equal to the proper values
+            sends an Incident email and enters in consolidation stage until the value becomes equal to the proper_value
+        else
+            re-checking the values after 1 second
+    '''
     consolidation = False
     temp_value = service_status(my_service_name)
 
@@ -163,7 +184,6 @@ def service_check(my_service_name):
             temp_value = service_status(my_service_name)
             if time.time() - start_time < secs_threshold:
                 consolidation = True
-                #print("SEND SERVICE INCIDENT EMAIL \n")
                 email_execution(service_template_incident)
                 break
 
@@ -173,7 +193,6 @@ def service_check(my_service_name):
             time.sleep(1)
             temp_value = service_status(my_service_name)
 
-        #print("SEND SERVICE CLEAR EMAIL \n")
         email_execution(service_template_clear)
 
     time.sleep(1)
@@ -196,7 +215,8 @@ def email_execution(template):
 
 if __name__ == '__main__':
     os.system("pip install psutil==5.6.7")
-    #pip install psutil
+
+    # User configuration starts
     confirmed = "N"
     while confirmed != "Y" and confirmed != "y":
         try:
@@ -206,7 +226,7 @@ if __name__ == '__main__':
             disk_threshold = float(input("Give me Disk threshold percentage %: "))
             secs_threshold = int(input("After how many seconds of exceeding, would you like to be notified? "))
 
-            if cpu_threshold < 100 and ram_threshold < 100 and disk_threshold < 100 and cpu_threshold >= 1 and ram_threshold >= 1 and disk_threshold >= 1:
+            if 1 <= cpu_threshold < 100 and 1 <= ram_threshold < 100 and 1 <= disk_threshold < 100:
                 confirmed = input("Do you want to confirm the above configuration ? [Y/N] : ")
             else:
                 print("Percentages should be between 1 and 100!")
@@ -216,7 +236,7 @@ if __name__ == '__main__':
 
     types = ("CPU", "RAM", "DISK")
 
-    add_service = str(input('Do you want to monitor a service ? [Y/N] : '))
+    add_service = str(input('Do you want to monitor a Windows Service ? [Y/N] : '))
     service_name = None
 
     while add_service == "Y" or add_service == "y":
@@ -256,8 +276,6 @@ if __name__ == '__main__':
 
     receiver_1 = input("Give me the email address that will be notified : ")
     receiver_2 = input("Confirm the receiver address : ")
-    #receiver = str(input("Give me the email address that will be notified : "))
-    #receiver = sender
     while receiver_1 != receiver_2:
         receiver_1 = input("Give me the email address that will be notified : ")
         receiver_2 = input("Confirm the receiver address : ")
@@ -287,5 +305,3 @@ if __name__ == '__main__':
     cpu_thread.start()
     ram_thread.start()
     disk_thread.start()
-
-# remove_logging, add_comments
